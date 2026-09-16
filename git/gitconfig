@@ -1,0 +1,20 @@
+; Git configuration for Linux containers. Deliberately not the same as the
+; config on a development machine: no diff-so-fancy pager or diff filter, since
+; those aren't installed here.
+;
+; core.excludesFile is not set because git already defaults to
+; ~/.config/git/ignore, which install.sh links.
+
+[user]
+	name = Alex North
+	email = 445306+anorth@users.noreply.github.com
+
+[alias]
+	co = checkout
+	st = status
+
+[init]
+	defaultBranch = main
+
+[worktree]
+	useRelativePaths = true

@@ -6,11 +6,15 @@ set -euo pipefail
 
 DOTFILES=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
-# Skills are collected under one agent-neutral hub, then each agent's own skills
-# directory links to the hub. Skills installed by other tools can live in the hub
-# alongside these and get picked up by the same fan-out.
-SKILL_HUB=$HOME/.agents/skills
-AGENT_SKILL_DIRS=("$HOME/.cursor/skills" "$HOME/.claude/skills")
+# Files to link, as "path in this repo:path under $HOME".
+LINKS=(
+  "git/gitconfig:.gitconfig"
+  "git/ignore:.config/git/ignore"
+)
+
+# Skills are read from here by Cursor directly, and the location is neutral
+# across agents.
+SKILL_DIR=$HOME/.agents/skills
 
 dry_run=0
 
@@ -51,7 +55,7 @@ link() {
   if [[ -L $path ]]; then
     [[ $(readlink "$path") == "$target" ]] && return 0
   elif [[ -e $path ]]; then
-    echo "skipped $path: exists and is not a symlink; move it aside to adopt it"
+    echo "kept $path: already exists and is not a symlink, so leaving it alone"
     return 0
   fi
   act mkdir -p -- "$(dirname -- "$path")"
@@ -59,28 +63,12 @@ link() {
   echo "$verb $path -> $target"
 }
 
-# Every skill this repo owns, plus any already in the hub from other tools, so
-# that a skill installed by e.g. a skills CLI fans out to each agent as well.
-skill_names=()
-seen=" "
-collect() {
-  local dir name
-  for dir in "$1"/*/; do
-    [[ -d $dir ]] || continue
-    name=$(basename -- "$dir")
-    case $seen in *" $name "*) continue ;; esac
-    seen="$seen$name "
-    skill_names+=("$name")
-  done
-}
-collect "$DOTFILES/skills"
-collect "$SKILL_HUB"
+for entry in "${LINKS[@]}"; do
+  link "$DOTFILES/${entry%%:*}" "$HOME/${entry#*:}"
+done
 
-for name in "${skill_names[@]}"; do
-  if [[ -d $DOTFILES/skills/$name ]]; then
-    link "$DOTFILES/skills/$name" "$SKILL_HUB/$name"
-  fi
-  for agent_dir in "${AGENT_SKILL_DIRS[@]}"; do
-    link "$SKILL_HUB/$name" "$agent_dir/$name"
-  done
+for source in "$DOTFILES"/skills/*/; do
+  [[ -d $source ]] || continue
+  name=$(basename -- "$source")
+  link "$DOTFILES/skills/$name" "$SKILL_DIR/$name"
 done

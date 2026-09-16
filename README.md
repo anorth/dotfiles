@@ -1,7 +1,17 @@
 # dotfiles
 
-Personal customizations, scripts and agent skills, in a form that can be installed
-on a fresh machine or inside a dev container.
+Customizations, scripts and agent skills for **Linux dev containers**.
+
+## Scope
+
+This repo holds only things that work in a container. That keeps the installer
+free of OS detection and per-platform branching: if something needs a `uname`
+check to be safe, it doesn't belong here.
+
+So macOS-specific tooling stays on the development machine and out of this repo,
+and where a config exists in both places it is allowed to differ. `git/gitconfig`
+is the worked example — it omits the `diff-so-fancy` pager and diff filter,
+because those aren't installed in a container.
 
 Public repo: **no secrets, ever.** No tokens, keys, `.netrc`, `.aws`, or `.ssh`
 contents. Machine-specific secrets belong in the environment, not here.
@@ -15,38 +25,36 @@ git clone https://github.com/anorth/dotfiles.git ~/dotfiles
 
 `install.sh --dry-run` prints what would change without touching anything.
 
-The script is safe to re-run. Links that are already correct are left alone, and
-anything that exists but is not a symlink is reported and skipped rather than
-overwritten, so adopting an existing file is a deliberate act: move it aside,
-then re-run.
+Everything is installed as a symlink, so editing a file in the repo takes effect
+immediately.
+
+## Conservative by design
+
+The installer never overwrites a real file. If a target already exists and is not
+a symlink, it says so and moves on. Re-running is therefore always safe, and
+adopting a file that's already there is a deliberate act: move it aside, then
+re-run.
+
+This is what makes it safe to run on a development machine that has its own
+config. Running it on a Mac with an existing `~/.gitconfig` reports that the file
+was kept and leaves it untouched, so the container-flavoured config here can
+never clobber the local one.
 
 ## Layout
 
 | Path | Purpose |
 | --- | --- |
 | `skills/` | Agent skills, one directory per skill |
+| `git/` | Container-flavoured git config and global ignore |
 | `install.sh` | Links repo contents into `$HOME` |
 
-## How skills are installed
+Skills are linked into `~/.agents/skills/`, which Cursor reads directly and which
+is neutral across agents. Nothing is linked into `~/.cursor/skills/`, since that
+would be redundant. (Verified by planting a skill in `~/.agents/skills` only and
+confirming a headless `cursor-agent` listed it.)
 
-Skills fan out in two hops:
-
-```
-dotfiles/skills/<name>
-  <- ~/.agents/skills/<name>        the agent-neutral hub
-       <- ~/.cursor/skills/<name>
-       <- ~/.claude/skills/<name>
-```
-
-The hub exists so that each skill has exactly one home regardless of how many
-agents are installed, and so skills that arrive by other means (a skills CLI
-installing into `~/.agents/skills`, for instance) fan out to every agent too
-without being copied into this repo.
-
-Because the agent directories hold per-skill links rather than one link to the
-whole directory, machine-local skills can sit alongside repo-managed ones.
-
-To add an agent, extend `AGENT_SKILL_DIRS` in `install.sh`.
+Because these are per-skill links rather than one link to the whole directory,
+machine-local skills can sit alongside repo-managed ones.
 
 ## Dev containers
 
@@ -95,17 +103,8 @@ script that must be idempotent because it runs on every build.
 
 There is a separate path for skills alone: Settings → Agents → Sync Skills for
 Cloud Agents copies the contents of `~/.cursor/skills/`, and *only* that
-directory — `~/.agents/skills/` is not copied to cloud agents, remote SSH
-sessions, or self-hosted workers.
-
-That matters for the layout here, because `~/.cursor/skills/` holds symlinks into
-the hub rather than real files. Whether the sync dereferences those symlinks or
-copies them as links (which would dangle) is untested. If cloud agent sync
-becomes important, verify it, and fall back to copying skills into
-`~/.cursor/skills/` instead of linking them.
-
-## Editing
-
-Skills are symlinked, not copied, so editing a skill in this repo takes effect
-immediately for every agent on the machine. Commit and push, then re-run
-`install.sh` elsewhere to pick up new skills.
+directory. `~/.agents/skills/` is not copied to cloud agents, remote SSH
+sessions, or self-hosted workers, so skills installed by this repo are invisible
+to those environments. Getting them there would need a different approach, such
+as project-level skills committed to the repo being worked on, or baking them
+into a worker image.
