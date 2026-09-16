@@ -59,7 +59,7 @@ Set these in Cursor's user `settings.json` and every dev container gets the repo
 cloned and installed automatically, with no per-project configuration:
 
 ```json
-"dotfiles.repository": "anorth/dotfiles",
+"dotfiles.repository": "git@github.com:anorth/dotfiles.git",
 "dotfiles.targetPath": "~/dotfiles"
 ```
 
@@ -70,8 +70,28 @@ Dev containers in Cursor run through its own `anysphere.remote-containers`
 extension rather than Microsoft's, and dotfiles support arrived there in 1.0.14
 with the ordering relative to credential setup fixed in 1.0.16. Note that these
 settings are not covered by Cursor's official documentation, so treat them as
-subject to change. Keeping this repo public avoids the credential question at
-clone time entirely.
+subject to change.
+
+### Why the SSH URL, and why failures are invisible
+
+Because this repo is private, the `owner/repo` shorthand does not work. It expands
+to an HTTPS URL, and the container has no credentials for it, so the clone dies
+with:
+
+```
+fatal: could not read Username for 'https://github.com': No such device or address
+```
+
+The part that makes this hard to spot is that container creation reports success
+regardless — a failed dotfiles clone is not fatal to the container, so nothing
+appears in the UI and the container simply comes up without any of this installed.
+The creation log is the only place that error shows up.
+
+The SSH form authenticates with the forwarded SSH agent instead, which requires
+agent forwarding to be enabled (`dev.containers.enableSSHAgentForwarding`).
+
+A public repo would avoid the question entirely, since it clones anonymously
+everywhere.
 
 For environments that never read editor settings, such as CI, clone explicitly
 from `devcontainer.json` instead:
