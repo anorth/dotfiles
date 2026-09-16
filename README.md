@@ -59,7 +59,7 @@ Set these in Cursor's user `settings.json` and every dev container gets the repo
 cloned and installed automatically, with no per-project configuration:
 
 ```json
-"dotfiles.repository": "git@github.com:anorth/dotfiles.git",
+"dotfiles.repository": "anorth/dotfiles",
 "dotfiles.targetPath": "~/dotfiles"
 ```
 
@@ -72,26 +72,29 @@ with the ordering relative to credential setup fixed in 1.0.16. Note that these
 settings are not covered by Cursor's official documentation, so treat them as
 subject to change.
 
-### Why the SSH URL, and why failures are invisible
+### Why this repo is public
 
-Because this repo is private, the `owner/repo` shorthand does not work. It expands
-to an HTTPS URL, and the container has no credentials for it, so the clone dies
-with:
+Being public is what lets the `owner/repo` shorthand work: the clone is anonymous,
+so containers need no credentials and SSH agent forwarding can stay switched off.
 
-```
-fatal: could not read Username for 'https://github.com': No such device or address
-```
+That matters because agent forwarding is not scoped to reading one repository. It
+lets anything in the container use the forwarded key for any operation it
+authorises, including pushing to every repo that key can reach. Keeping this repo
+public buys a container that can install these dotfiles and still has no
+credentials at all — verified: no agent socket, no `~/.ssh` keys, no
+`~/.git-credentials`, and `ssh -T git@github.com` is refused.
 
-The part that makes this hard to spot is that container creation reports success
-regardless — a failed dotfiles clone is not fatal to the container, so nothing
-appears in the UI and the container simply comes up without any of this installed.
-The creation log is the only place that error shows up.
+The cost is that everything here is world-readable, which is why the no-secrets
+rule above is a hard constraint rather than a preference.
 
-The SSH form authenticates with the forwarded SSH agent instead, which requires
-agent forwarding to be enabled (`dev.containers.enableSSHAgentForwarding`).
-
-A public repo would avoid the question entirely, since it clones anonymously
-everywhere.
+If it ever goes private, the shorthand breaks in a way that is easy to miss. It
+expands to an HTTPS URL, the container has no credentials, and the clone dies with
+`fatal: could not read Username for 'https://github.com'` — but container creation
+still reports success, so nothing surfaces in the UI and the container just comes
+up without any of this installed. The creation log is the only place that error
+appears. Fixing it means switching to `git@github.com:anorth/dotfiles.git` and
+enabling `dev.containers.enableSSHAgentForwarding`, i.e. giving containers push
+access to everything.
 
 For environments that never read editor settings, such as CI, clone explicitly
 from `devcontainer.json` instead:
