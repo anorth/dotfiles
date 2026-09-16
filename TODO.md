@@ -16,24 +16,21 @@ needs a `uname` check, it doesn't belong here.
   shell config only applies where something already sources it. The same
   constraint is why `~/bin` currently reaches `PATH` only via `.profile`.
 
-Deliberately staying out: `notify` (macOS `osascript`), `sshec2` (AWS-specific and
-rarely wanted in a container), the `zed` and `zq` binaries in `~/bin` (113MB
-combined — install from a package manager instead), and the macOS-only parts of
-`.zshrc` (Homebrew paths, conda, pnpm, oh-my-zsh and the `myh` theme).
-
 ## Mechanisms
 
-- **External repos.** A declarative list of repos that `install.sh` clones or
-  pulls, then symlinks from. The candidate is the repo where new agent skills are
-  being developed — gflow was folded into `bin/` instead, since it is one stdlib
-  script. Submodules were rejected: pinning fights against a repo you're actively
-  editing. Open question whether to pin refs at all.
 - **A manifest file.** `install.sh` currently declares links in a `LINKS` array
   inline. If that grows much beyond git config, move it out to a file.
+- **Generalised external repos.** Skills are now fetched from
+  [anorth/agent-skills](https://github.com/anorth/agent-skills) (sibling checkout
+  or `~/agent-skills`, no pin, skip on dirty/diverged). If a second external
+  repo appears, lift that into a declarative list rather than another special
+  case. Submodules stay rejected: pinning fights against a repo you're actively
+  editing.
 
 ## Open questions
 
-- **Cloud agents.** Only `~/.cursor/skills/` syncs to them, and this repo installs
-  to `~/.agents/skills/`, so skills here are invisible to cloud agents, remote SSH
-  sessions and self-hosted workers. Needs a different approach if that ever
-  matters: project-level skills, or baking them into a worker image.
+- **Cloud agents.** Only `~/.cursor/skills/` syncs to them, and this installer
+  links skills into `~/.agents/skills/`, so they are invisible to cloud agents,
+  remote SSH sessions and self-hosted workers. Needs a different approach if
+  that ever matters: also link into `~/.cursor/skills/`, project-level skills, or
+  baking them into a worker image.
