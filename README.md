@@ -10,8 +10,7 @@ check to be safe, it doesn't belong here.
 
 So macOS-specific tooling stays on the development machine and out of this repo,
 and where a config exists in both places it is allowed to differ. `git/gitconfig`
-is the worked example — it omits the `diff-so-fancy` pager and diff filter,
-because those aren't installed in a container.
+is the worked example.
 
 Public repo: **no secrets, ever.** No tokens, keys, `.netrc`, `.aws`, or `.ssh`
 contents. Machine-specific secrets belong in the environment, not here.
@@ -49,9 +48,7 @@ never clobber the local one.
 | `install.sh` | Links repo contents into `$HOME` |
 
 Skills are linked into `~/.agents/skills/`, which Cursor reads directly and which
-is neutral across agents. Nothing is linked into `~/.cursor/skills/`, since that
-would be redundant. (Verified by planting a skill in `~/.agents/skills` only and
-confirming a headless `cursor-agent` listed it.)
+is neutral across agents.
 
 Because these are per-skill links rather than one link to the whole directory,
 machine-local skills can sit alongside repo-managed ones.
@@ -67,9 +64,7 @@ cloned and installed automatically, with no per-project configuration:
 ```
 
 `dotfiles.installCommand` can be left unset: `install.sh` is the first filename
-the dev containers CLI looks for, so it is picked up automatically. (If none of
-its expected names were found it would instead symlink every top-level file into
-the home directory, which is not what this repo wants.)
+the dev containers CLI looks for, so it is picked up automatically.
 
 Dev containers in Cursor run through its own `anysphere.remote-containers`
 extension rather than Microsoft's, and dotfiles support arrived there in 1.0.14
@@ -92,7 +87,24 @@ rather than from a clone so that uncommitted changes can be exercised. Open the
 folder in a container, or from the command line:
 
 ```sh
-npx -y @devcontainers/cli up --workspace-folder .
+devcontainer up --workspace-folder .         # create and start, runs postCreateCommand
+devcontainer exec --workspace-folder . bash  # interactive shell inside it
+```
+
+Prefix both with `npx -y @devcontainers/cli` if the CLI isn't installed globally
+(`npm install -g @devcontainers/cli`).
+
+`exec` drops you into `/workspaces/dotfiles` as `vscode`, the same place and user
+the editor gives you. Reaching in with `docker exec` needs
+`-u vscode -w /workspaces/dotfiles` to match.
+
+Re-running `up` reuses an existing container, which is fast but ignores changes to
+`devcontainer.json`; add `--remove-existing-container` to force a rebuild. There
+is no `down` subcommand, so tear down through docker, matching on the label the
+CLI stamps on containers it creates:
+
+```sh
+docker rm -f $(docker ps -aq --filter label=devcontainer.local_folder="$PWD")
 ```
 
 ## Cloud agents
