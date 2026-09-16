@@ -44,8 +44,13 @@ never clobber the local one.
 | Path | Purpose |
 | --- | --- |
 | `skills/` | Agent skills, one directory per skill |
+| `bin/` | Scripts, linked into `~/bin` |
 | `git/` | Container-flavoured git config and global ignore |
 | `install.sh` | Links repo contents into `$HOME` |
+
+`~/bin` lands on `PATH` courtesy of the container's default `.profile`, which adds
+it when the directory exists — so it works in login shells and in an editor
+terminal, but a bare non-login `docker exec` shell won't see it.
 
 Skills are linked into `~/.agents/skills/`, which Cursor reads directly and which
 is neutral across agents.

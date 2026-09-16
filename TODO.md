@@ -5,18 +5,21 @@ needs a `uname` check, it doesn't belong here.
 
 ## Content to bring over
 
-- **`bin/` scripts.** `replace-all` is the one worth having, but it needs work
-  first: it relies on BSD `sed -i ''`, which is a syntax error under GNU sed, and
-  on `ack`, which isn't in a container. Either port it or rewrite it over `rg`.
 - **Portable shell config.** The git aliases from `.zshrc` are the valuable part.
   Containers give bash, so this wants to be a `shell/common.sh` that both
   `.bashrc` and a local `.zshrc` can source. Of the functions, `extract` is
   portable, `killport` needs `lsof`, and `j` needs `fzf`.
 
-Deliberately staying out: `notify` (macOS `osascript`), the `zed` and `zq` binaries
-in `~/bin` (113MB combined — install from a package manager instead), and the
-macOS-only parts of `.zshrc` (Homebrew paths, conda, pnpm, oh-my-zsh and the `myh`
-theme).
+  There is a wrinkle to solve here: the installer will not overwrite the
+  container's existing `~/.bashrc`, so it cannot simply append a `source` line.
+  Either ship a `.bashrc` and require the default be moved aside, or accept that
+  shell config only applies where something already sources it. The same
+  constraint is why `~/bin` currently reaches `PATH` only via `.profile`.
+
+Deliberately staying out: `notify` (macOS `osascript`), `sshec2` (AWS-specific and
+rarely wanted in a container), the `zed` and `zq` binaries in `~/bin` (113MB
+combined — install from a package manager instead), and the macOS-only parts of
+`.zshrc` (Homebrew paths, conda, pnpm, oh-my-zsh and the `myh` theme).
 
 ## Mechanisms
 

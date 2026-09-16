@@ -8,6 +8,7 @@ DOTFILES=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 # Files to link, as "path in this repo:path under $HOME".
 LINKS=(
+  "bin/replace-all:bin/replace-all"
   "git/gitconfig:.gitconfig"
   "git/ignore:.config/git/ignore"
 )

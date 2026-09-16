@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Replace a regex across files, in place.
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: replace-all [-n] <pattern> <replacement> [path...]
+
+Replaces <pattern>, a regex, with <replacement>, literal text, in every file
+below each <path> that matches. Paths default to the current directory.
+
+  -n, --dry-run   List the files that would change, without changing them.
+
+Files are found with ripgrep where it is installed, which additionally skips
+anything .gitignore'd, and with grep otherwise. Either way .git, node_modules
+and binary files are left alone. The substitution itself is done by perl, so
+the pattern is a perl regex; the replacement is inserted literally, and
+backreferences in it are not expanded.
+EOF
+}
+
+dry_run=0
+case ${1:-} in
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  -n | --dry-run)
+    dry_run=1
+    shift
+    ;;
+esac
+
+if (($# < 2)); then
+  usage >&2
+  exit 2
+fi
+
+pattern=$1
+replacement=$2
+shift 2
+paths=("$@")
+((${#paths[@]})) || paths=(.)
+
+files=()
+while IFS= read -r file; do
+  files+=("$file")
+done < <(
+  if command -v rg >/dev/null 2>&1; then
+    rg --files-with-matches --glob '!node_modules' --regexp "$pattern" -- "${paths[@]}"
+  else
+    grep -rlI --exclude-dir=.git --exclude-dir=node_modules -E -e "$pattern" -- "${paths[@]}"
+  fi || true
+)
+
+if ((${#files[@]} == 0)); then
+  echo "replace-all: no files matched" >&2
+  exit 1
+fi
+
+if ((dry_run)); then
+  printf '%s\n' "${files[@]}"
+  exit 0
+fi
+
+PATTERN=$pattern REPLACEMENT=$replacement perl -i -pe '
+  BEGIN { $p = $ENV{PATTERN}; $r = $ENV{REPLACEMENT} }
+  s/$p/$r/g
+' "${files[@]}"
+
+printf 'replace-all: rewrote %d file(s)\n' "${#files[@]}"
