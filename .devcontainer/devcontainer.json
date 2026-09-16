@@ -2,6 +2,14 @@
   "name": "dotfiles",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
 
+  // python3 is a prerequisite of bin/gflow. Declared here so this repo's own
+  // container can run it, and as an example for other projects.
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "installTools": false
+    }
+  },
+
   // Install from the mounted workspace rather than a clone, so uncommitted
   // changes to install.sh can be exercised here before being pushed.
   "postCreateCommand": "./install.sh",

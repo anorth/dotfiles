@@ -24,11 +24,10 @@ combined — install from a package manager instead), and the macOS-only parts o
 ## Mechanisms
 
 - **External repos.** A declarative list of repos that `install.sh` clones or
-  pulls, then symlinks from. Prove it out with `gflow`
-  (`github.com/anorth/gflows`, currently reached via `~/bin/gflow` pointing into
-  `~/src/gflows`), then use the same mechanism for the repo where new agent skills
-  are being developed. Submodules were rejected for this: pinning fights against a
-  repo you're actively editing. Open question whether to pin refs at all.
+  pulls, then symlinks from. The candidate is the repo where new agent skills are
+  being developed — gflow was folded into `bin/` instead, since it is one stdlib
+  script. Submodules were rejected: pinning fights against a repo you're actively
+  editing. Open question whether to pin refs at all.
 - **A manifest file.** `install.sh` currently declares links in a `LINKS` array
   inline. If that grows much beyond git config, move it out to a file.
 

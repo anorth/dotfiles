@@ -52,6 +52,11 @@ never clobber the local one.
 it when the directory exists — so it works in login shells and in an editor
 terminal, but a bare non-login `docker exec` shell won't see it.
 
+`bin/gflow` needs `python3`. This repo's own container installs it with the
+`ghcr.io/devcontainers/features/python:1` feature (`installTools` off — we only
+need the interpreter). Other projects that want gflow should declare the same
+feature, or already have Python in their image.
+
 Skills are linked into `~/.agents/skills/`, which Cursor reads directly and which
 is neutral across agents.
 
