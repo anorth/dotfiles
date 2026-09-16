@@ -1,0 +1,16 @@
+{
+  "name": "dotfiles",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  // Install from the mounted workspace rather than a clone, so uncommitted
+  // changes to install.sh can be exercised here before being pushed.
+  "postCreateCommand": "./install.sh",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}

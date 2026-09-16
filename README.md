@@ -77,6 +77,16 @@ from `devcontainer.json` instead:
 "postCreateCommand": "git clone --depth 1 https://github.com/anorth/dotfiles.git ~/dotfiles 2>/dev/null || git -C ~/dotfiles pull --ff-only; ~/dotfiles/install.sh"
 ```
 
+### Testing changes to the installer
+
+This repo has its own dev container, which installs from the mounted workspace
+rather than from a clone so that uncommitted changes can be exercised. Open the
+folder in a container, or from the command line:
+
+```sh
+npx -y @devcontainers/cli up --workspace-folder .
+```
+
 ## Cloud agents
 
 Cursor cloud agents do not use the dotfiles mechanism at all. They are configured
