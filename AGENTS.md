@@ -6,7 +6,8 @@ for planned work.
 
 Agent skills are not in this repo. They live in
 [anorth/agent-skills](https://github.com/anorth/agent-skills). `install.sh`
-clones or reuses that catalog and links each skill into `~/.agents/skills/`.
+clones or reuses that catalog and links each skill into `~/.agents/skills/`
+and `~/.claude/skills/`.
 
 ## Constraints
 

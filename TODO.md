@@ -30,7 +30,7 @@ needs a `uname` check, it doesn't belong here.
 ## Open questions
 
 - **Cloud agents.** Only `~/.cursor/skills/` syncs to them, and this installer
-  links skills into `~/.agents/skills/`, so they are invisible to cloud agents,
-  remote SSH sessions and self-hosted workers. Needs a different approach if
-  that ever matters: also link into `~/.cursor/skills/`, project-level skills, or
-  baking them into a worker image.
+  links skills into `~/.agents/skills/` and `~/.claude/skills/`, so they are
+  invisible to cloud agents, remote SSH sessions and self-hosted workers. Needs
+  a different approach if that ever matters: also link into `~/.cursor/skills/`,
+  project-level skills, or baking them into a worker image.

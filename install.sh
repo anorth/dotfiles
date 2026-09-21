@@ -16,10 +16,14 @@ LINKS=(
 
 # Skills live in a separate public catalog (anorth/agent-skills). Prefer a
 # sibling checkout next to this repo (authoring machine); otherwise clone or
-# update under ~/agent-skills (containers).
+# update under ~/agent-skills (containers). Linked into each dest so Cursor
+# (~/.agents) and Claude Code (~/.claude) both see them.
 SKILLS_REPO_URL=https://github.com/anorth/agent-skills.git
 SKILLS_HOME=$HOME/agent-skills
-SKILL_DIR=$HOME/.agents/skills
+SKILL_DIRS=(
+  "$HOME/.agents/skills"
+  "$HOME/.claude/skills"
+)
 
 dry_run=0
 
@@ -129,7 +133,9 @@ if [[ -n ${SKILLS_REPO:-} && -d $SKILLS_REPO/skills ]]; then
   for source in "$SKILLS_REPO"/skills/*/; do
     [[ -d $source ]] || continue
     name=$(basename -- "$source")
-    link "$SKILLS_REPO/skills/$name" "$SKILL_DIR/$name"
+    for dest in "${SKILL_DIRS[@]}"; do
+      link "$SKILLS_REPO/skills/$name" "$dest/$name"
+    done
   done
 elif ((dry_run)) && [[ -n ${SKILLS_REPO:-} ]]; then
   echo "would link skills from $SKILLS_REPO/skills once cloned"

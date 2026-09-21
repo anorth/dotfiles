@@ -4,9 +4,9 @@ Customizations and scripts for **Linux dev containers**.
 
 Agent skills live in a separate public catalog,
 [anorth/agent-skills](https://github.com/anorth/agent-skills). This installer
-clones that repo and links its skills into `~/.agents/skills/` so containers
-still get them automatically. Others can install the skills alone with
-`npx skills add anorth/agent-skills`.
+clones that repo and links its skills into `~/.agents/skills/` and
+`~/.claude/skills/` so Cursor and Claude Code both see them. Others can install
+the skills alone with `npx skills add anorth/agent-skills`.
 
 ## Scope
 
@@ -75,9 +75,12 @@ like this:
    path). If the tree is dirty, diverged, or the network fails, the installer
    reports and skips rather than overwriting or failing the rest of the install.
 
-Each skill is then linked into `~/.agents/skills/`, which Cursor reads directly
-and which is neutral across agents. Per-skill links mean machine-local skills can
-sit alongside catalog ones.
+Each skill is then linked into `~/.agents/skills/` (Cursor and other agents that
+follow that convention) and `~/.claude/skills/` (Claude Code). Both dests point
+at the catalog checkout, so edits are live. Per-skill links mean machine-local
+skills can sit alongside catalog ones. The installer does not use `npx skills`:
+that CLI copies into `~/.agents/skills/` rather than linking back to a local
+checkout, which would break the sibling-edit loop.
 
 ## Dev containers
 
@@ -164,8 +167,8 @@ script that must be idempotent because it runs on every build.
 
 There is a separate path for skills alone: Settings → Agents → Sync Skills for
 Cloud Agents copies the contents of `~/.cursor/skills/`, and *only* that
-directory. `~/.agents/skills/` is not copied to cloud agents, remote SSH
-sessions, or self-hosted workers, so skills linked by this installer are
-invisible to those environments. Getting them there would need a different
-approach, such as also linking into `~/.cursor/skills/`, project-level skills
-committed to the repo being worked on, or baking them into a worker image.
+directory. `~/.agents/skills/` and `~/.claude/skills/` are not copied to cloud
+agents, remote SSH sessions, or self-hosted workers, so skills linked by this
+installer are invisible to those environments. Getting them there would need a
+different approach, such as also linking into `~/.cursor/skills/`, project-level
+skills committed to the repo being worked on, or baking them into a worker image.
