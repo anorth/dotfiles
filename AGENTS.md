@@ -21,8 +21,8 @@ and `~/.claude/skills/`.
 - **Installer is conservative.** `install.sh` links into `$HOME` and never
   overwrites a real file. Do not change that: a skipped existing file is
   intended, not a bug. Adopting it is a deliberate move-aside, then re-run.
-  The same rule applies to the agent-skills checkout: dirty or diverged trees
-  are reported and skipped, not force-updated.
+  The same rule applies to external checkouts:
+  dirty or diverged trees are reported and skipped, not force-updated.
 
 New scripts go in `bin/` and are added to the `LINKS` array in `install.sh`.
 New skills go in the agent-skills repo.

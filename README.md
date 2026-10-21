@@ -6,7 +6,9 @@ Agent skills live in a separate public catalog,
 [anorth/agent-skills](https://github.com/anorth/agent-skills). This installer
 clones that repo and links its skills into `~/.agents/skills/` and
 `~/.claude/skills/` so Cursor and Claude Code both see them. Others can install
-the skills alone with `npx skills add anorth/agent-skills`.
+the skills alone with `npx skills add anorth/agent-skills`. Oh-my-zsh is fetched
+the same way, into `~/.oh-my-zsh`, for VMs and containers that use the `~/.zshrc`
+from this repo.
 
 ## Scope
 
@@ -42,38 +44,73 @@ adopting a file that's already there is a deliberate act: move it aside, then
 re-run.
 
 This is what makes it safe to run on a development machine that has its own
-config. Running it on a Mac with an existing `~/.gitconfig` reports that the file
-was kept and leaves it untouched, so the container-flavoured config here can
-never clobber the local one.
+config. Running it on a Mac with an existing `~/.gitconfig` or `~/.zshrc` reports
+that the file was kept and leaves it untouched, so the config here can never
+clobber the local one. A dev container image that already wrote `~/.zshrc` is
+kept the same way. A VM with no `~/.zshrc` gets the link.
 
 ## Layout
 
 | Path | Purpose |
 | --- | --- |
-| `bin/` | Scripts, linked into `~/bin` |
+| `bin/` | Scripts, linked into `~/.local/bin` |
 | `git/` | Container-flavoured git config and global ignore |
-| `install.sh` | Links repo contents into `$HOME`; also fetches agent-skills |
+| `shell/` | `common.sh` (bash and zsh), linked to `~/.config/shell/common.sh`. `zshrc` linked to `~/.zshrc` when that file is absent |
+| `install.sh` | Links repo contents into `$HOME`; also fetches agent-skills and oh-my-zsh |
 
-`~/bin` lands on `PATH` courtesy of the container's default `.profile`, which adds
-it when the directory exists — so it works in login shells and in an editor
-terminal, but a bare non-login `docker exec` shell won't see it.
+On Linux, `~/.local/bin` is on `PATH` via the default `.profile`. The dev VM
+image also adds it in `~/.zshenv`, so non-login shells see it. On macOS, add
+it to `PATH` in the local `~/.zshrc` if it isn't already.
+
+### Shell
+
+`install.sh` links `shell/common.sh` to `~/.config/shell/common.sh` and
+`shell/zshrc` to `~/.zshrc`. The `~/.zshrc` link happens only when that path is
+missing. A Mac `~/.zshrc`, and a `~/.zshrc` a container image already wrote, are
+both left in place.
+
+On the development machine, add this to the existing `~/.zshrc` after
+`source $ZSH/oh-my-zsh.sh`, so these aliases replace the git plugin's `g`:
+
+```sh
+source ~/.config/shell/common.sh
+```
+
+`shell/zshrc` is the startup file for a Linux VM or container that did not
+already have one. It points oh-my-zsh at `~/.oh-my-zsh`, then sources `common.sh`
+from the repo beside itself.
+Direnv, mise, fzf, Atuin, and syntax highlighting load only when already installed.
+Machine-specific settings, and anything secret, go in `~/.zshrc.local`.
+`shell/zshrc` sources that file when it exists, just before syntax highlighting.
+`common.sh` is POSIX, so a bash shell can source `~/.config/shell/common.sh` on
+its own.
+
+The installer does not change the login shell. A VM needs `zsh` installed before
+this `~/.zshrc` runs.
 
 `bin/gflow` needs `python3`. This repo's own container installs it with the
 `ghcr.io/devcontainers/features/python:1` feature (`installTools` off — we only
 need the interpreter). Other projects that want gflow should declare the same
 feature, or already have Python in their image.
 
-### Agent skills
+### External repos
 
-`install.sh` resolves [anorth/agent-skills](https://github.com/anorth/agent-skills)
-like this:
+`install.sh` fetches the checkouts in its `REPOS` list. For each entry: if it
+names a sibling directory and that directory next to this repo is a git
+checkout, use it as-is (the working copy you edit, for example
+`/Users/me/Projects/agent-skills` beside `/Users/me/Projects/dotfiles`).
+Otherwise clone `--depth 1` or `git pull --ff-only` into the home path. A dirty
+tree, a diverged branch, or a network failure is reported and skipped. The rest
+of the install still runs.
 
-1. If a sibling checkout exists next to this repo (e.g.
-   `/Users/me/Projects/agent-skills` beside `/Users/me/Projects/dotfiles`), use
-   that — the working copy you edit on the development machine.
-2. Otherwise clone or `git pull --ff-only` into `~/agent-skills` (the container
-   path). If the tree is dirty, diverged, or the network fails, the installer
-   reports and skips rather than overwriting or failing the rest of the install.
+| Home path | Sibling | Repo |
+| --- | --- | --- |
+| `~/agent-skills` | `agent-skills` | [anorth/agent-skills](https://github.com/anorth/agent-skills) |
+| `~/.oh-my-zsh` | none | [ohmyzsh/ohmyzsh](https://github.com/ohmyzsh/ohmyzsh) |
+
+Oh-my-zsh has no sibling. `shell/zshrc` expects `~/.oh-my-zsh`, and a checkout
+already there (including one a dev container image cloned) is fast-forwarded
+when clean.
 
 Each skill is then linked into `~/.agents/skills/` (Cursor and other agents that
 follow that convention) and `~/.claude/skills/` (Claude Code). Both dests point
@@ -140,7 +177,7 @@ folder in a container, or from the command line:
 
 ```sh
 devcontainer up --workspace-folder .         # create and start, runs postCreateCommand
-devcontainer exec --workspace-folder . bash  # interactive shell inside it
+devcontainer exec --workspace-folder . zsh   # interactive shell inside it
 ```
 
 Prefix both with `npx -y @devcontainers/cli` if the CLI isn't installed globally

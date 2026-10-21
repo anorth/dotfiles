@@ -8,18 +8,26 @@ DOTFILES=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 # Files to link, as "path in this repo:path under $HOME".
 LINKS=(
-  "bin/gflow:bin/gflow"
-  "bin/replace-all:bin/replace-all"
+  "bin/gflow:.local/bin/gflow"
+  "bin/replace-all:.local/bin/replace-all"
   "git/gitconfig:.gitconfig"
   "git/ignore:.config/git/ignore"
+  "shell/common.sh:.config/shell/common.sh"
+  "shell/zshrc:.zshrc"
 )
 
-# Skills live in a separate public catalog (anorth/agent-skills). Prefer a
-# sibling checkout next to this repo (authoring machine); otherwise clone or
-# update under ~/agent-skills (containers). Linked into each dest so Cursor
-# (~/.agents) and Claude Code (~/.claude) both see them.
-SKILLS_REPO_URL=https://github.com/anorth/agent-skills.git
-SKILLS_HOME=$HOME/agent-skills
+# External checkouts, as "dest|sibling|url".
+# dest is relative to $HOME. sibling is a directory name next to this repo, or
+# "-" when the home path is the only location. A sibling checkout is used as-is
+# (the copy you edit). Otherwise dest is cloned or fast-forwarded. Dirty,
+# diverged, or unreachable trees are reported and skipped.
+REPOS=(
+  "agent-skills|agent-skills|https://github.com/anorth/agent-skills.git"
+  ".oh-my-zsh|-|https://github.com/ohmyzsh/ohmyzsh.git"
+)
+
+# Skills are linked into each dest so Cursor (~/.agents) and Claude Code
+# (~/.claude) both see them.
 SKILL_DIRS=(
   "$HOME/.agents/skills"
   "$HOME/.claude/skills"
@@ -72,71 +80,83 @@ link() {
   echo "$verb $path -> $target"
 }
 
-# Resolve or refresh the agent-skills checkout. Never fails the installer:
-# report and skip when the tree is dirty, diverged, or the network is down.
-ensure_skills_repo() {
-  local sibling parent
+# Resolve or refresh one entry from REPOS. Sets resolved_repo to the checkout
+# to use, or empty when that entry was skipped. Never fails the installer.
+ensure_repo() {
+  local dest_rel=$1 sibling_name=$2 url=$3
+  local parent sibling dest
   parent=$(dirname -- "$DOTFILES")
-  sibling=$parent/agent-skills
+  dest=$HOME/$dest_rel
+  resolved_repo=
 
-  if [[ -d $sibling/.git ]]; then
-    SKILLS_REPO=$sibling
-    echo "using skills repo $SKILLS_REPO"
-    return 0
+  if [[ $sibling_name != - ]]; then
+    sibling=$parent/$sibling_name
+    if [[ -d $sibling/.git ]]; then
+      resolved_repo=$sibling
+      echo "using $resolved_repo"
+      return 0
+    fi
   fi
 
-  SKILLS_REPO=$SKILLS_HOME
-
-  if [[ -d $SKILLS_REPO/.git ]]; then
+  if [[ -d $dest/.git ]]; then
+    resolved_repo=$dest
     if ((dry_run)); then
-      echo "would update skills repo $SKILLS_REPO"
+      echo "would update $dest"
       return 0
     fi
-    if [[ -n $(git -C "$SKILLS_REPO" status --porcelain 2>/dev/null) ]]; then
-      echo "kept $SKILLS_REPO: working tree is dirty, skipping pull"
+    if [[ -n $(git -C "$dest" status --porcelain 2>/dev/null) ]]; then
+      echo "kept $dest: working tree is dirty, skipping pull"
       return 0
     fi
-    if ! git -C "$SKILLS_REPO" pull --ff-only; then
-      echo "kept $SKILLS_REPO: could not fast-forward (diverged or network error)"
+    if ! git -C "$dest" pull --ff-only; then
+      echo "kept $dest: could not fast-forward (diverged or network error)"
       return 0
     fi
-    echo "updated skills repo $SKILLS_REPO"
+    echo "updated $dest"
     return 0
   fi
 
-  if [[ -e $SKILLS_REPO ]]; then
-    echo "kept $SKILLS_REPO: exists but is not a git repo, skipping skills"
-    SKILLS_REPO=
+  if [[ -e $dest ]]; then
+    echo "kept $dest: exists but is not a git repo, skipping"
     return 0
   fi
 
   if ((dry_run)); then
-    echo "would clone $SKILLS_REPO_URL -> $SKILLS_REPO"
+    echo "would clone $url -> $dest"
+    resolved_repo=$dest
     return 0
   fi
 
-  if ! git clone --depth 1 "$SKILLS_REPO_URL" "$SKILLS_REPO"; then
-    echo "skipped skills: could not clone $SKILLS_REPO_URL"
-    SKILLS_REPO=
+  if ! git clone --depth 1 "$url" "$dest"; then
+    echo "skipped $dest: could not clone $url"
     return 0
   fi
-  echo "cloned skills repo $SKILLS_REPO"
+  resolved_repo=$dest
+  echo "cloned $dest"
 }
 
 for entry in "${LINKS[@]}"; do
   link "$DOTFILES/${entry%%:*}" "$HOME/${entry#*:}"
 done
 
-ensure_skills_repo
+skills_repo=
+for entry in "${REPOS[@]}"; do
+  dest=${entry%%|*}
+  rest=${entry#*|}
+  sibling=${rest%%|*}
+  url=${rest#*|}
+  ensure_repo "$dest" "$sibling" "$url"
+  if [[ $dest == agent-skills ]]; then skills_repo=$resolved_repo; fi
+done
 
-if [[ -n ${SKILLS_REPO:-} && -d $SKILLS_REPO/skills ]]; then
-  for source in "$SKILLS_REPO"/skills/*/; do
+if [[ -n $skills_repo && -d $skills_repo/skills ]]; then
+  for source in "$skills_repo"/skills/*/; do
     [[ -d $source ]] || continue
     name=$(basename -- "$source")
     for dest in "${SKILL_DIRS[@]}"; do
-      link "$SKILLS_REPO/skills/$name" "$dest/$name"
+      link "$skills_repo/skills/$name" "$dest/$name"
     done
   done
-elif ((dry_run)) && [[ -n ${SKILLS_REPO:-} ]]; then
-  echo "would link skills from $SKILLS_REPO/skills once cloned"
+elif ((dry_run)) && [[ -n $skills_repo ]]; then
+  echo "would link skills from $skills_repo/skills once cloned"
 fi

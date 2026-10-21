@@ -1,0 +1,57 @@
+# Linux zsh startup for VMs and containers. install.sh links this to ~/.zshrc
+# only when that file is absent, so a machine that already has one keeps its own.
+# Oh-my-zsh lives at ~/.oh-my-zsh. Updates are disabled here so a fresh clone
+# does not prompt; the installer fast-forwards that checkout itself.
+
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="robbyrussell"
+zstyle ':omz:update' mode disabled
+plugins=(git shrink-path)
+
+if [[ -r $ZSH/oh-my-zsh.sh ]]; then
+  source "$ZSH/oh-my-zsh.sh"
+fi
+
+# After oh-my-zsh so these aliases replace the git plugin's `g`.
+source "${${(%):-%x}:A:h}/common.sh"
+
+# oh-my-zsh's history.zsh turns this on.
+unsetopt share_history
+
+bindkey '^j' vi-cmd-mode
+bindkey '^r' history-incremental-search-backward
+
+if command -v direnv >/dev/null; then
+  eval "$(direnv hook zsh)"
+fi
+
+# Shims are already on PATH via ~/.zshenv. This is for mise.toml [env].
+if command -v mise >/dev/null; then
+  eval "$(mise activate zsh)"
+fi
+
+# fzf rebinds ^R to its history widget. Atuin, loaded next, owns ^R when it
+# is installed; otherwise fzf keeps it.
+# Older fzf builds have no --zsh; skip them rather than failing startup.
+if command -v fzf >/dev/null; then
+  fzf_zsh=$(fzf --zsh 2>/dev/null) && eval "$fzf_zsh"
+  unset fzf_zsh
+fi
+
+command -v atuin >/dev/null && eval "$(atuin init zsh)"
+
+# Machine-specific settings, including anything secret. Not in this repo.
+# Syntax highlighting below must stay last.
+[[ -r $HOME/.zshrc.local ]] && source "$HOME/.zshrc.local"
+
+# Must be the last thing in this file.
+for _hl in \
+  /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh \
+  /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+do
+  if [[ -r $_hl ]]; then
+    source "$_hl"
+    break
+  fi
+done
+unset _hl
