@@ -1,8 +1,8 @@
 # Agent notes
 
-Linux-only customizations for **dev containers**: scripts and a
-container-flavoured git config. See `README.md` for layout and install, `TODO.md`
-for planned work.
+Linux-only customizations for development environments including VMs and
+dev containrs. Contains scripts and a container-flavoured git config.
+See `README.md` for layout and install, `TODO.md` for planned work.
 
 Agent skills are not in this repo. They live in
 [anorth/agent-skills](https://github.com/anorth/agent-skills). `install.sh`

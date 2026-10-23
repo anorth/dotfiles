@@ -58,9 +58,9 @@ kept the same way. A VM with no `~/.zshrc` gets the link.
 | `shell/` | `common.sh` (bash and zsh), linked to `~/.config/shell/common.sh`. `zshrc` linked to `~/.zshrc` when that file is absent |
 | `install.sh` | Links repo contents into `$HOME`; also fetches agent-skills and oh-my-zsh |
 
-On Linux, `~/.local/bin` is on `PATH` via the default `.profile`. The dev VM
-image also adds it in `~/.zshenv`, so non-login shells see it. On macOS, add
-it to `PATH` in the local `~/.zshrc` if it isn't already.
+`shell/common.sh` prepends `~/.local/bin` to `PATH` when that directory exists
+and is not already listed. zsh does not add it on its own. A Linux login
+profile or `~/.zshenv` sometimes does; the check avoids a second entry.
 
 ### Shell
 

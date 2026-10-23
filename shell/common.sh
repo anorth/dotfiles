@@ -3,6 +3,15 @@
 # `g` as `git`, and the aliases below are meant to replace that.
 # `gh` is left unset so it stays the GitHub CLI.
 
+# zsh does not put ~/.local/bin on PATH. Some Linux login profiles do, via
+# .profile or ~/.zshenv. Prepend it when the directory exists and is not listed.
+if [ -d "$HOME/.local/bin" ]; then
+  case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) PATH="$HOME/.local/bin:$PATH" ;;
+  esac
+fi
+
 # Git aliases
 alias g-b="git branch"
 alias g='git branch && git status -sb'
