@@ -79,7 +79,7 @@ source ~/.config/shell/common.sh
 `shell/zshrc` is the startup file for a Linux VM or container that did not
 already have one. It points oh-my-zsh at `~/.oh-my-zsh`, then sources `common.sh`
 from the repo beside itself.
-Direnv, mise, fzf, Atuin, and syntax highlighting load only when already installed.
+Direnv, mise, fzf, and syntax highlighting load only when already installed.
 Machine-specific settings, and anything secret, go in `~/.zshrc.local`.
 `shell/zshrc` sources that file when it exists, just before syntax highlighting.
 `common.sh` is POSIX, so a bash shell can source `~/.config/shell/common.sh` on

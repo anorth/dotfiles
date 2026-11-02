@@ -30,15 +30,12 @@ if command -v mise >/dev/null; then
   eval "$(mise activate zsh)"
 fi
 
-# fzf rebinds ^R to its history widget. Atuin, loaded next, owns ^R when it
-# is installed; otherwise fzf keeps it.
+# fzf rebinds ^R to its history widget when its zsh integration loads.
 # Older fzf builds have no --zsh; skip them rather than failing startup.
 if command -v fzf >/dev/null; then
   fzf_zsh=$(fzf --zsh 2>/dev/null) && eval "$fzf_zsh"
   unset fzf_zsh
 fi
-
-command -v atuin >/dev/null && eval "$(atuin init zsh)"
 
 # Machine-specific settings, including anything secret. Not in this repo.
 # Syntax highlighting below must stay last.
