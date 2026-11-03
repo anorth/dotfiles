@@ -195,17 +195,3 @@ CLI stamps on containers it creates:
 ```sh
 docker rm -f $(docker ps -aq --filter label=devcontainer.local_folder="$PWD")
 ```
-
-## Cloud agents
-
-Cursor cloud agents do not use the dotfiles mechanism at all. They are configured
-per repo through `.cursor/environment.json`, with a Dockerfile and an `install`
-script that must be idempotent because it runs on every build.
-
-There is a separate path for skills alone: Settings → Agents → Sync Skills for
-Cloud Agents copies the contents of `~/.cursor/skills/`, and *only* that
-directory. `~/.agents/skills/` and `~/.claude/skills/` are not copied to cloud
-agents, remote SSH sessions, or self-hosted workers, so skills linked by this
-installer are invisible to those environments. Getting them there would need a
-different approach, such as also linking into `~/.cursor/skills/`, project-level
-skills committed to the repo being worked on, or baking them into a worker image.
