@@ -97,20 +97,20 @@ feature, or already have Python in their image.
 
 `install.sh` fetches the checkouts in its `REPOS` list. For each entry: if it
 names a sibling directory and that directory next to this repo is a git
-checkout, use it as-is (the working copy you edit, for example
+checkout, use that (the working copy you edit, for example
 `/Users/me/Projects/agent-skills` beside `/Users/me/Projects/dotfiles`).
-Otherwise clone `--depth 1` or `git pull --ff-only` into the home path. A dirty
-tree, a diverged branch, or a network failure is reported and skipped. The rest
-of the install still runs.
+Otherwise clone `--depth 1` into the home path. Either checkout is then
+fast-forwarded with `git pull --ff-only` before anything is linked from it. A
+dirty tree is left alone. Any other pull failure is reported and that pull is
+skipped. The rest of the install still runs.
 
 | Home path | Sibling | Repo |
 | --- | --- | --- |
 | `~/agent-skills` | `agent-skills` | [anorth/agent-skills](https://github.com/anorth/agent-skills) |
 | `~/.oh-my-zsh` | none | [ohmyzsh/ohmyzsh](https://github.com/ohmyzsh/ohmyzsh) |
 
-Oh-my-zsh has no sibling. `shell/zshrc` expects `~/.oh-my-zsh`, and a checkout
-already there (including one a dev container image cloned) is fast-forwarded
-when clean.
+Oh-my-zsh has no sibling. `shell/zshrc` expects `~/.oh-my-zsh`, including when a
+dev container image already cloned it there.
 
 Each skill is then linked into `~/.agents/skills/` (Cursor and other agents that
 follow that convention) and `~/.claude/skills/` (Claude Code). Both dests point

@@ -19,9 +19,9 @@ LINKS=(
 
 # External checkouts, as "dest|sibling|url".
 # dest is relative to $HOME. sibling is a directory name next to this repo, or
-# "-" when the home path is the only location. A sibling checkout is used as-is
-# (the copy you edit). Otherwise dest is cloned or fast-forwarded. Dirty,
-# diverged, or unreachable trees are reported and skipped.
+# "-" when the home path is the only location. A sibling checkout is preferred
+# (the copy you edit). Either way it is cloned or fast-forwarded before use.
+# A dirty tree, or a pull that fails, is reported and left alone.
 REPOS=(
   "agent-skills|agent-skills|https://github.com/anorth/agent-skills.git"
   ".oh-my-zsh|-|https://github.com/ohmyzsh/ohmyzsh.git"
@@ -100,6 +100,30 @@ prune_skill_links() {
   done
 }
 
+# Fast-forward one checkout. A dirty tree or a failed pull is reported and
+# the tree is left as it is. Never fails the installer.
+update_repo() {
+  local dest=$1 dirty
+  if ((dry_run)); then
+    echo "would update $dest"
+    return 0
+  fi
+  if ! dirty=$(git -C "$dest" status --porcelain); then
+    echo "kept $dest: could not read working tree, skipping pull"
+    return 0
+  fi
+  if [[ -n $dirty ]]; then
+    echo "kept $dest: working tree is dirty, skipping pull"
+    return 0
+  fi
+  # A credential prompt would hang a non-interactive install. Fail instead.
+  if ! GIT_TERMINAL_PROMPT=0 git -C "$dest" pull --ff-only; then
+    echo "kept $dest: git pull failed, continuing with the current checkout"
+    return 0
+  fi
+  echo "updated $dest"
+}
+
 # Resolve or refresh one entry from REPOS. Sets resolved_repo to the checkout
 # to use, or empty when that entry was skipped. Never fails the installer.
 ensure_repo() {
@@ -114,25 +138,14 @@ ensure_repo() {
     if [[ -d $sibling/.git ]]; then
       resolved_repo=$sibling
       echo "using $resolved_repo"
+      update_repo "$resolved_repo"
       return 0
     fi
   fi
 
   if [[ -d $dest/.git ]]; then
     resolved_repo=$dest
-    if ((dry_run)); then
-      echo "would update $dest"
-      return 0
-    fi
-    if [[ -n $(git -C "$dest" status --porcelain 2>/dev/null) ]]; then
-      echo "kept $dest: working tree is dirty, skipping pull"
-      return 0
-    fi
-    if ! git -C "$dest" pull --ff-only; then
-      echo "kept $dest: could not fast-forward (diverged or network error)"
-      return 0
-    fi
-    echo "updated $dest"
+    update_repo "$dest"
     return 0
   fi
 
