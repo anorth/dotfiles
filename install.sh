@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Link this repo's contents into the current machine's home directory.
 # Safe to re-run: existing correct links are left alone, and anything that is
-# not a symlink is reported and skipped rather than overwritten.
+# not a symlink is reported and skipped rather than overwritten. Catalog skill
+# symlinks whose target directory is gone are removed.
 set -euo pipefail
 
 DOTFILES=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
@@ -60,7 +61,11 @@ while (($#)); do
 done
 
 verb=linked
-if ((dry_run)); then verb="would link"; fi
+rm_verb=removed
+if ((dry_run)); then
+  verb="would link"
+  rm_verb="would remove"
+fi
 
 act() {
   ((dry_run)) || "$@"
@@ -78,6 +83,21 @@ link() {
   act mkdir -p -- "$(dirname -- "$path")"
   act ln -sfn -- "$target" "$path"
   echo "$verb $path -> $target"
+}
+
+# Remove symlinks in one skill dir that point into this catalog checkout but
+# whose skill directory is gone. Real entries and links aimed elsewhere stay.
+prune_skill_links() {
+  local dest=$1 path target
+  [[ -d $dest ]] || return 0
+  for path in "$dest"/*; do
+    [[ -L $path ]] || continue
+    target=$(readlink "$path")
+    [[ ${target#"$skills_repo/skills/"} != "$target" ]] || continue
+    [[ -d $target ]] && continue
+    act rm -- "$path"
+    echo "$rm_verb $path -> $target"
+  done
 }
 
 # Resolve or refresh one entry from REPOS. Sets resolved_repo to the checkout
@@ -159,4 +179,10 @@ if [[ -n $skills_repo && -d $skills_repo/skills ]]; then
   done
 elif ((dry_run)) && [[ -n $skills_repo ]]; then
   echo "would link skills from $skills_repo/skills once cloned"
+fi
+
+if [[ -n $skills_repo && -d $skills_repo ]]; then
+  for dest in "${SKILL_DIRS[@]}"; do
+    prune_skill_links "$dest"
+  done
 fi

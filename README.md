@@ -115,7 +115,9 @@ when clean.
 Each skill is then linked into `~/.agents/skills/` (Cursor and other agents that
 follow that convention) and `~/.claude/skills/` (Claude Code). Both dests point
 at the catalog checkout, so edits are live. Per-skill links mean machine-local
-skills can sit alongside catalog ones. The installer does not use `npx skills`:
+skills can sit alongside catalog ones. Re-running removes a catalog symlink
+when its skill directory is gone. Anything else in those directories stays.
+The installer does not use `npx skills`:
 that CLI copies into `~/.agents/skills/` rather than linking back to a local
 checkout, which would break the sibling-edit loop.
 
